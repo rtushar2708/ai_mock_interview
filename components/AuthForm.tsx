@@ -11,6 +11,12 @@ import Link from "next/link";
 import { toast } from "sonner";
 import FormFields from "./FormFields";
 import { useRouter } from "next/navigation";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "@/firebase/client";
+import { signIn, signUp } from "@/lib/action/auth.action";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
@@ -36,14 +42,51 @@ const AuthForm = ({ type }: { type: FormType }) => {
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       if (type === "sign-in") {
-        // Handle sign-in logic here
+        const { email, password } = values;
+
+        const userCredentials = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const idToken = await userCredentials.user.getIdToken();
+
+        if (!idToken) {
+          toast.error("Sign in failed");
+          return;
+        }
+
+        await signIn({
+          email,
+          idToken,
+        });
+
         toast.success("Signed in successfully!");
         router.push("/");
       } else {
-        // Handle sign-up logic here
+        const { name, email, password } = values;
+
+        const userCredentials = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+        const result = await signUp({
+          uid: userCredentials.user.uid,
+          name: name!,
+          email,
+          password,
+        });
+
+        if (!result?.success) {
+          toast.error(result?.message);
+          return;
+        }
+
         toast.success("Account created successfully! Please sign in.");
         router.push("/sign-in");
       }
@@ -87,19 +130,19 @@ const AuthForm = ({ type }: { type: FormType }) => {
               />
             )}
             <FormFields
-                control={form.control}
-                name="email"
-                label="Email"
-                placeholder="Your email address"
-                type="email"
-              />
+              control={form.control}
+              name="email"
+              label="Email"
+              placeholder="Your email address"
+              type="email"
+            />
             <FormFields
-                control={form.control}
-                name="password"
-                label="Password"
-                placeholder="Enter your password"
-                type="password"
-              />
+              control={form.control}
+              name="password"
+              label="Password"
+              placeholder="Enter your password"
+              type="password"
+            />
 
             <Button className="btn" type="submit">
               {isSignIn ? "Sign in" : "Create an Account"}
