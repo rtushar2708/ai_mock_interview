@@ -30,7 +30,6 @@ const Agent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setmessages] = useState<SavedMessage[]>([]);
-  const lastMessage = messages[messages.length - 1];
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
@@ -66,12 +65,21 @@ const Agent = ({
     };
   }, []);
 
-  const handleGenerateFeedback = async (message: SavedMessage[]) => {
-    console.log("Generate Feedback here.");
-    const { success, id } = {
-      success: true,
-      id: "feedback-id",
-    };
+  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+  try {
+    const res = await fetch("/api/createFeedback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        interviewId: interviewId!,
+        userId: userId!,
+        transcript: messages,
+      }),
+    });
+
+    const { success, feedbackId: id } = await res.json();
 
     if (success && id) {
       router.push(`/interview/${interviewId}/feedback`);
@@ -79,7 +87,11 @@ const Agent = ({
       console.log("Error Saving Feedback");
       router.push("/");
     }
-  };
+  } catch (error) {
+    console.error("Client error:", error);
+  }
+};
+
 
   useEffect(() => {
     if (callStatus === CallStatus.FINISHED) {
