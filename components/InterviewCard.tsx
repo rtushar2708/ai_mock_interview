@@ -7,14 +7,6 @@ import { getRandomInterviewCover } from '@/lib/utils';
 import DisplayTechIcons from './DisplayTechIcons';
 import { getFeedbackByInterviewId } from '@/lib/action/general.action';
 
-// interface InterviewCardProps {
-//   id: string;
-//   userId: string;
-//   role: string;
-//   type: string;
-//   techstack: string[];
-//   createdAt: string;
-// }
 
 const InterviewCard = async ({ id, userId, role, type, techstack,createdAt }: InterviewCardProps) => {
   const feedback = userId && id ? await getFeedbackByInterviewId({interviewId: id, userId}) : null;
